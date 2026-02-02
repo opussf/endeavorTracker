@@ -1,7 +1,7 @@
 ET_SLUG, ET = ...
 
 -- Saved Variables
-Endeavor_data = {}
+ET.myTasks = {}
 ET.displayData = {}
 ET.numBarsCanFit = 0
 
@@ -21,10 +21,10 @@ function ET.OnUpdate(elapsed)
 end
 function ET.UpdateBars()
 	ET.displayData = {}
-	if not Endeavor_data.myTasks then
+	if not ET.myTasks then
 		return -- I HATE early returns.
 	end
-	for ID, task in pairs(Endeavor_data.myTasks) do
+	for ID, task in pairs(ET.myTasks) do
 		local newIndex = #ET.displayData + 1
 		ET.displayData[newIndex] = task
 		ET.displayData[newIndex].ID = ID
@@ -40,7 +40,6 @@ function ET.UpdateBars()
 	end)
 
 	for idx, barLine in pairs(ET.bars) do
-		print(idx)
 		if ET.displayData[idx] then
 			barLine.bar:SetMinMaxValues(0,75)
 			barLine.bar:SetValue(ET.displayData[idx].progressContributionAmount)
@@ -71,7 +70,7 @@ function ET.INITIATIVE_COMPLETED( payload )  -- initiative title
 end
 function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
 	-- print("INITIATIVE_TASK_COMPLETED: "..payload)
-	for ID, task in pairs( Endeavor_data.myTasks ) do
+	for ID, task in pairs( ET.myTasks ) do
 		if task.taskName == payload then
 			print("Task ("..ID..") was completed. Setting completed to: "..(task.tracked and "True" or "False"))
 			task.completed = task.tracked
@@ -89,16 +88,22 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 		newTask.progressContributionAmount = taskInfo.progressContributionAmount
 		newTask.tracked = true
 		newTask.rewardQuestID = taskInfo.rewardQuestID
-		Endeavor_data.myTasks[initiativeTaskID] = newTask
+		ET.myTasks[initiativeTaskID] = newTask
 	end
 
-	if not added and Endeavor_data.myTasks[initiativeTaskID] then
+	if not added and ET.myTasks[initiativeTaskID] then
 		C_Timer.After(1, function()
-			if Endeavor_data.myTasks[initiativeTaskID].completed then
+			if ET.myTasks[initiativeTaskID].completed then
 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(initiativeTaskID)
-				Endeavor_data.myTasks[initiativeTaskID].completed = nil
+				ET.myTasks[initiativeTaskID].completed = nil
 			else
-				Endeavor_data.myTasks[initiativeTaskID] = nil
+				ET.myTasks[initiativeTaskID] = nil
+				-- remove from displayData
+				for idx, displayData in pairs(ET.displayData) do
+					if displayData.ID == initiativeTaskID then
+						ET.displayData[idx] = nil
+					end
+				end
 			end
 		end)
 	end
@@ -107,7 +112,7 @@ end
 function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	-- made progress fires this event.
 	-- print("INITIATIVE_TASKS_TRACKED_UPDATED")
-	for ID, task in pairs(Endeavor_data.myTasks) do
+	for ID, task in pairs(ET.myTasks) do
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(ID)
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
 			-- ID matches, requirementText does not.  Progress!
@@ -122,37 +127,37 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	-- print("NEIGHBORHOOD_INITIATIVE_UPDATED")
 	EndeavorFrameBar0:SetMinMaxValues(0, 1000)
 	ET.NeighborhoodInitiativeInfo = C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo()
-	Endeavor_data.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
-	Endeavor_data.progressRequired = ET.NeighborhoodInitiativeInfo.progressRequired
-	EndeavorFrameBar0:SetValue(Endeavor_data.currentProgress)
+	ET.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
+	ET.progressRequired = ET.NeighborhoodInitiativeInfo.progressRequired
+	EndeavorFrameBar0:SetValue(ET.currentProgress)
 	EndeavorFrameBar0.text:SetText(
-			string.format("Endeavor Progress: %i / %i", Endeavor_data.currentProgress, Endeavor_data.progressRequired))
+			string.format("Endeavor Progress: %i / %i", ET.currentProgress, ET.progressRequired))
 	EndeavorFrame:Show()
 
 	-- store some general info
-	Endeavor_data.neighborhoodGUID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID
-	Endeavor_data.playerTotalContribution = ET.NeighborhoodInitiativeInfo.playerTotalContribution
+	ET.neighborhoodGUID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID
+	ET.playerTotalContribution = ET.NeighborhoodInitiativeInfo.playerTotalContribution
 
-	Endeavor_data.initiativeID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.playerTotalContribution
-	Endeavor_data.initiativeTitle = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.title
+	ET.initiativeID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.playerTotalContribution
+	ET.initiativeTitle = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.title
 
-	Endeavor_data.myTasks = Endeavor_data.myTasks or {}  -- [id] = {}
+	ET.myTasks = ET.myTasks or {}  -- [id] = {}
 	-- scan for tracked tasks
 	for _, task in pairs( ET.NeighborhoodInitiativeInfo.tasks ) do
-		if not Endeavor_data.myTasks[task.ID] and task.tracked then  -- I'm not tracking this task, and I should.
+		if not ET.myTasks[task.ID] and task.tracked then  -- I'm not tracking this task, and I should.
 			local newTask = {}
 			newTask.taskName = task.taskName
 			newTask.requirementText = task.requirementsList[1].requirementText
 			newTask.progressContributionAmount = task.progressContributionAmount
 			newTask.tracked = true
 			newTask.rewardQuestID = task.rewardQuestID
-			Endeavor_data.myTasks[task.ID] = newTask
+			ET.myTasks[task.ID] = newTask
 		end
-		-- if Endeavor_data.myTasks[task.ID] and not task.tracked then
-		-- 	Endeavor_data.myTasks[task.ID] = nil
+		-- if ET.myTasks[task.ID] and not task.tracked then
+		-- 	ET.myTasks[task.ID] = nil
 		-- end
 	end
-	Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
+	ET.dump = ET.NeighborhoodInitiativeInfo
 end
 function ET.BuildBars()
 	if not ET.bars then
