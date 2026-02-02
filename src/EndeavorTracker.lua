@@ -2,6 +2,8 @@ ET_SLUG, ET = ...
 
 -- Saved Variables
 Endeavor_data = {}
+ET.displayData = {}
+ET.numBarsCanFit = 0
 
 function ET.OnLoad()
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
@@ -13,8 +15,41 @@ function ET.OnLoad()
 	EndeavorFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	ET.BuildBars()
 	EndeavorFrame:Show()
+	ET.UpdateBars()
 end
 function ET.OnUpdate(elapsed)
+end
+function ET.UpdateBars()
+	ET.displayData = {}
+	for ID, task in pairs(Endeavor_data.myTasks) do
+		ET.displayData[#ET.displayData] = task
+		ET.displayData[#ET.displayData].ID = ID
+	end
+
+	table.sort( ET.displayData, function(l, r)
+		if l.progressContributionAmount > r.progressContributionAmount then
+			return true
+		elseif l.progressContributionAmount == r.progressContributionAmount then
+			return l.ID < r.ID
+		end
+		return false
+	end)
+
+	for idx = 1,ET.numBarsCanFit do
+		ET.bars[idx].bar:SetMinMaxValues(0,75)
+		ET.bars[idx].bar:SetValue(ET.displayData[idx].progressContributionAmount)
+		ET.bars[idx].text:SetText(
+				string.format("%2i %s %s",
+						ET.displayData[idx].progressContributionAmount,
+						ET.displayData[idx].taskName,
+						ET.displayData[idx].requirementText
+				)
+		)
+		ET.bars[idx]:Show()
+	end
+
+
+	Endeavor_data.display = ET.displayData  -- @TODO: Remove this
 end
 function ET.PLAYER_ENTERING_WORLD()
 	-- make sure Initiative Info is loaded.
@@ -36,6 +71,7 @@ function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
 			task.completed = task.tracked
 		end
 	end
+	ET.UpdateBars()
 end
 function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  -- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
 	-- print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
@@ -72,7 +108,7 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 			print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
 		end
 	end
-
+	ET.UpdateBars()
 end
 function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	-- this fires a lot, but this might be the work hourse function here.
@@ -117,12 +153,12 @@ function ET.BuildBars()
 	local EPHeight = EndeavorFrameBar0:GetHeight()
 	local parentBottom = EndeavorFrame:GetBottom()
 	local spaceAvailable = EPBottom - parentBottom
-	local numBarsCanFit = math.floor(spaceAvailable / EPHeight)
+	ET.numBarsCanFit = math.floor(spaceAvailable / EPHeight)
 
-	print( height, EPBottom, spaceAvailable, numBarsCanFit )
+	print( height, EPBottom, spaceAvailable, ET.numBarsCanFit )
 	local count = #ET.bars
-	if numBarsCanFit > count then -- can fit more bars than I have
-		for idx = count+1, numBarsCanFit do
+	if ET.numBarsCanFit > count then -- can fit more bars than I have
+		for idx = count+1, ET.numBarsCanFit do
 			ET.bars[idx] = {}
 			local newBar = CreateFrame("StatusBar", "EndeavorFrameBar"..idx, EndeavorFrame, "EndeavorBarTemplate")
 			newBar:SetPoint("TOPLEFT", "EndeavorFrameBar"..idx-1, "BOTTOMLEFT", 0, 0)
@@ -134,7 +170,7 @@ function ET.BuildBars()
 			newBar.text = text
 			ET.bars[idx].bar = newBar
 		end
-	elseif numBarsCanFit < count then
+	elseif ET.numBarsCanFit < count then
 		for idx = numBarsCanFit+1, count do
 			ET.bars[idx].bar:SetValue(0)
 			ET.bars[idx].text:SetText("")
