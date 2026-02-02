@@ -4,8 +4,8 @@ ET_SLUG, ET = ...
 Endeavor_data = {}
 
 function ET.OnLoad()
-	EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
-	EndeavorFrame:RegisterEvent("INITIATIVE_COMPLETED")
+	-- EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
+	-- EndeavorFrame:RegisterEvent("INITIATIVE_COMPLETED")
 	EndeavorFrame:RegisterEvent("INITIATIVE_TASK_COMPLETED")
 	EndeavorFrame:RegisterEvent("INITIATIVE_TASKS_TRACKED_LIST_CHANGED")
 	EndeavorFrame:RegisterEvent("INITIATIVE_TASKS_TRACKED_UPDATED")
@@ -21,14 +21,15 @@ function ET.PLAYER_ENTERING_WORLD()
 	C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()
 end
 function ET.INITIATIVE_ACTIVITY_LOG_UPDATED()
+	-- not sure what to do this.
 	print("INITIATIVE_ACTIVITY_LOG_UPDATED")
-
 end
 function ET.INITIATIVE_COMPLETED( payload )  -- initiative title
+	-- this probably fires when you get the final reward.
 	print("INITIATIVE_COMPLETED: "..payload)
 end
 function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
-	print("INITIATIVE_TASK_COMPLETED: "..payload)
+	-- print("INITIATIVE_TASK_COMPLETED: "..payload)
 	for ID, task in pairs( Endeavor_data.myTasks ) do
 		if task.taskName == payload then
 			print("Task ("..ID..") was completed. Setting completed to: "..(task.tracked and "True" or "False"))
@@ -37,13 +38,15 @@ function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
 	end
 end
 function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  -- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
-	print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
+	-- print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
 	if added then
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(initiativeTaskID)
 		local newTask = {}
 		newTask.taskName = taskInfo.taskName
 		newTask.requirementText = taskInfo.requirementsList[1].requirementText
+		newTask.progressContributionAmount = taskInfo.progressContributionAmount
 		newTask.tracked = true
+		newTask.rewardQuestID = taskInfo.rewardQuestID
 		Endeavor_data.myTasks[initiativeTaskID] = newTask
 	end
 
@@ -60,7 +63,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 end
 function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	-- made progress fires this event.
-	print("INITIATIVE_TASKS_TRACKED_UPDATED")
+	-- print("INITIATIVE_TASKS_TRACKED_UPDATED")
 	for ID, task in pairs(Endeavor_data.myTasks) do
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(ID)
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
@@ -73,7 +76,7 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 end
 function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	-- this fires a lot, but this might be the work hourse function here.
-	print("NEIGHBORHOOD_INITIATIVE_UPDATED")
+	-- print("NEIGHBORHOOD_INITIATIVE_UPDATED")
 	EndeavorFrameBar0:SetMinMaxValues(0, 1000)
 	ET.NeighborhoodInitiativeInfo = C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo()
 	Endeavor_data.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
@@ -85,7 +88,7 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 
 	-- store some general info
 	Endeavor_data.neighborhoodGUID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID
-	Endeavor_data.playerTotalContribution = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.playerTotalContribution
+	Endeavor_data.playerTotalContribution = ET.NeighborhoodInitiativeInfo.playerTotalContribution
 
 	Endeavor_data.initiativeID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.playerTotalContribution
 	Endeavor_data.initiativeTitle = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.title
@@ -97,10 +100,13 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 			local newTask = {}
 			newTask.taskName = task.taskName
 			newTask.requirementText = task.requirementsList[1].requirementText
+			newTask.progressContributionAmount = task.progressContributionAmount
 			newTask.tracked = true
+			newTask.rewardQuestID = task.rewardQuestID
 			Endeavor_data.myTasks[task.ID] = newTask
 		end
 	end
+	-- Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
 end
 function ET.BuildBars()
 	if not ET.bars then
@@ -108,42 +114,46 @@ function ET.BuildBars()
 	end
 	local width, height = EndeavorFrame:GetSize()
 	local EPBottom = EndeavorFrameBar0:GetBottom()
-	local EPheight = EndeavorFrameBar0:GetHeight()
+	local EPHeight = EndeavorFrameBar0:GetHeight()
 	local parentBottom = EndeavorFrame:GetBottom()
 	local spaceAvailable = EPBottom - parentBottom
+	local numBarsCanFit = math.floor(spaceAvailable / EPHeight)
 
-
-	print( height, EPBottom, spaceAvailable )
-
+	print( height, EPBottom, spaceAvailable, numBarsCanFit )
+	local count = #ET.bars
+	if numBarsCanFit > count then -- can fit more bars than I have
+		for idx = count+1, numBarsCanFit do
+			ET.bars[idx] = {}
+			local newBar = CreateFrame("StatusBar", "EndeavorFrameBar"..idx, EndeavorFrame, "EndeavorBarTemplate")
+			newBar:SetPoint("TOPLEFT", "EndeavorFrameBar"..idx-1, "BOTTOMLEFT", 0, 0)
+			newBar:SetMinMaxValues(0,75)
+			newBar:SetValue(0)
+			--newBar:SetScript("OnClick", func)
+			local text = newBar:CreateFontString("EndeavorFrameBarText"..idx, "OVERLAY", "EndeavorBarTextTemplate")
+			text:SetPoint("LEFT", newBar, "LEFT", 5, 0)
+			newBar.text = text
+			ET.bars[idx].bar = newBar
+		end
+	elseif numBarsCanFit < count then
+		for idx = numBarsCanFit+1, count do
+			ET.bars[idx].bar:SetValue(0)
+			ET.bars[idx].text:SetText("")
+			ET.bars[idx].bar:Hide()
+		end
+	end
 end
 
 --[[
 
-local pendingCompletion = {}
 
-function OnQuestUntracked(questID)
-    -- Mark this as potentially a completion-based untrack
-    pendingCompletion[questID] = true
 
-    -- Set a short delay to check if completion event fires
-    C_Timer.After(0.1, function()
-        if pendingCompletion[questID] then
-            -- No completion event fired, so it was a manual untrack
-            pendingCompletion[questID] = nil
-            -- Handle manual untrack here
-        end
-    end)
-end
 
-function OnQuestComplete(questID)
-    if pendingCompletion[questID] then
-        -- This untrack was due to completion!
-        pendingCompletion[questID] = nil
+/dump C_QuestInfoSystem.GetQuestRewardCurrencies(91739)
+quality = 2
+name = "Coupons"
+currencyID = 3363
+total,base,bonusRewardAmmount = 30, 0, 30
 
-        -- Re-track the quest
-        C_QuestLog.AddQuestWatch(questID)
-    end
-end
 
 
 
@@ -220,5 +230,7 @@ end
 * Scan for Task info.  [ID] = "NAME"
 * Store if you are tracking
 
+
+/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo(102).rewardQuestID
 
 ]]
