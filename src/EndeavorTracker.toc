@@ -1,0 +1,10 @@
+## Title: EndeavorTracker
+## Interface: @INTERFACE@
+## Notes: Track your favorite Endeavors (@VERSION@)
+## Author: opussf
+## Version: @VERSION@
+## Description: Track your favorite Endeavors
+## SavedVariables: Endeavor_data
+
+EndeavorTracker.lua
+EndeavorTracker.xml
