@@ -19,7 +19,7 @@
 			<maxResize x="316" y="773"/>
 		</ResizeBounds>
 		<Anchors>
-			<Anchor point="CENTER"/>
+			<Anchor point="LEFT"/>
 		</Anchors>
 		<Layers>
 			<Layer level="BACKGROUND">
@@ -27,7 +27,7 @@
 					<Color r="0.0" g="0.0" b="0.0"/>
 				</Texture>
 			</Layer>
-			<Layer level="ARTWORK">  -->
+			<Layer level="ARTWORK">
 				<FontString name="$parent_TitleText" inherits="GameFontHighlight" text="Endeavor Tracker">
 					<Size>
 						<AbsDimension x="250" y="14"/>
@@ -54,9 +54,15 @@
 					<Anchor point="LEFT"/>
 					<Anchor point="TOP" relativeTo="$parentClose" relativePoint="BOTTOM"/>
 				</Anchors>
-				<Frames>
-					<FontString name="$parentBarText0"  inherits="EndeavorBarTextTemplate"/>
-				</Frames>
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parentBarText0" inherits="EndeavorBarTextTemplate" parentKey="text">
+							<Anchors>
+								<Anchor point="LEFT"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
 			</StatusBar>
 		</Frames>
 		<Scripts>
