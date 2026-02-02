@@ -6,6 +6,7 @@ ET.displayData = {}
 ET.numBarsCanFit = 0
 
 function ET.OnLoad()
+	print("ET.OnLoad()")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_COMPLETED")
 	EndeavorFrame:RegisterEvent("INITIATIVE_TASK_COMPLETED")
@@ -15,15 +16,18 @@ function ET.OnLoad()
 	EndeavorFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	ET.BuildBars()
 	EndeavorFrame:Show()
-	ET.UpdateBars()
 end
 function ET.OnUpdate(elapsed)
 end
 function ET.UpdateBars()
 	ET.displayData = {}
+	if not Endeavor_data.myTasks then
+		return -- I HATE early returns.
+	end
 	for ID, task in pairs(Endeavor_data.myTasks) do
-		ET.displayData[#ET.displayData] = task
-		ET.displayData[#ET.displayData].ID = ID
+		local newIndex = #ET.displayData + 1
+		ET.displayData[newIndex] = task
+		ET.displayData[newIndex].ID = ID
 	end
 
 	table.sort( ET.displayData, function(l, r)
@@ -35,21 +39,23 @@ function ET.UpdateBars()
 		return false
 	end)
 
-	for idx = 1,ET.numBarsCanFit do
-		ET.bars[idx].bar:SetMinMaxValues(0,75)
-		ET.bars[idx].bar:SetValue(ET.displayData[idx].progressContributionAmount)
-		ET.bars[idx].text:SetText(
-				string.format("%2i %s %s",
-						ET.displayData[idx].progressContributionAmount,
-						ET.displayData[idx].taskName,
-						ET.displayData[idx].requirementText
-				)
-		)
-		ET.bars[idx]:Show()
+	for idx, barLine in pairs(ET.bars) do
+		print(idx)
+		if ET.displayData[idx] then
+			barLine.bar:SetMinMaxValues(0,75)
+			barLine.bar:SetValue(ET.displayData[idx].progressContributionAmount)
+			barLine.bar.text:SetText(
+					string.format("%2i %s %s",
+							ET.displayData[idx].progressContributionAmount,
+							ET.displayData[idx].taskName,
+							ET.displayData[idx].requirementText
+					)
+			)
+			barLine.bar:Show()
+		else
+			barLine.bar:Hide()
+		end
 	end
-
-
-	Endeavor_data.display = ET.displayData  -- @TODO: Remove this
 end
 function ET.PLAYER_ENTERING_WORLD()
 	-- make sure Initiative Info is loaded.
@@ -96,6 +102,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 			end
 		end)
 	end
+	ET.UpdateBars()
 end
 function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	-- made progress fires this event.
@@ -141,8 +148,11 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 			newTask.rewardQuestID = task.rewardQuestID
 			Endeavor_data.myTasks[task.ID] = newTask
 		end
+		-- if Endeavor_data.myTasks[task.ID] and not task.tracked then
+		-- 	Endeavor_data.myTasks[task.ID] = nil
+		-- end
 	end
-	-- Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
+	Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
 end
 function ET.BuildBars()
 	if not ET.bars then
