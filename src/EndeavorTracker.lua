@@ -6,7 +6,7 @@ ET.displayData = {}
 ET.numBarsCanFit = 0
 
 function ET.OnLoad()
-	print("ET.OnLoad()")
+	EndeavorFrame:RegisterEvent("HOUSE_LEVEL_FAVOR_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_COMPLETED")
 	EndeavorFrame:RegisterEvent("INITIATIVE_TASK_COMPLETED")
@@ -138,8 +138,8 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	ET.neighborhoodGUID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID
 	ET.playerTotalContribution = ET.NeighborhoodInitiativeInfo.playerTotalContribution
 
-	ET.initiativeID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.playerTotalContribution
-	ET.initiativeTitle = ET.NeighborhoodInitiativeInfo.neighborhoodGUID.title
+	ET.initiativeID = ET.NeighborhoodInitiativeInfo.playerTotalContribution
+	ET.initiativeTitle = ET.NeighborhoodInitiativeInfo.title
 
 	ET.myTasks = ET.myTasks or {}  -- [id] = {}
 	-- scan for tracked tasks
@@ -170,7 +170,6 @@ function ET.BuildBars()
 	local spaceAvailable = EPBottom - parentBottom
 	ET.numBarsCanFit = math.floor(spaceAvailable / EPHeight)
 
-	print( height, EPBottom, spaceAvailable, ET.numBarsCanFit )
 	local count = #ET.bars
 	if ET.numBarsCanFit > count then -- can fit more bars than I have
 		for idx = count+1, ET.numBarsCanFit do
@@ -192,6 +191,20 @@ function ET.BuildBars()
 			ET.bars[idx].bar:Hide()
 		end
 	end
+end
+
+function ET.HOUSE_LEVEL_FAVOR_UPDATED( payload )
+	ET.houseInfo = payload   -- houseLevel, houseFavor, houseGUID
+
+	ET.houseInfo.levelMaxFavor = C_Housing.GetHouseLevelFavorForLevel(ET.houseInfo.houseLevel + 1)
+	EndeavorFrame_TitleText:SetText(string.format("Endeavor Tracker  (House lvl:%i %i/%i)",
+			ET.houseInfo.houseLevel, ET.houseInfo.houseFavor, ET.houseInfo.levelMaxFavor ))
+end
+function ET.OnDragStart()
+	EndeavorFrame:StartMoving()
+end
+function ET.OnDragEnd()
+	EndeavorFrame:StopMovingOrSizing()
 end
 
 --[[
@@ -283,5 +296,23 @@ end
 
 
 /dump C_NeighborhoodInitiative.GetInitiativeTaskInfo(102).rewardQuestID
+
+
+/dump C_Housing.GetCurrentHouseInfo()
+
+HouseGUID
+
+
+/dump C_Housing.GetCurrentHouseLevelFavor("Opaque-4")
+
+Fires event "HOUSE_LEVEL_FAVOR_UPDATED" with this payload:
+houseLevel 6
+houseFavor 6090  (xp)
+houseGUID  Opaque-1
+
+/dump C_Housing.GetHouseLevelFavorForLevel(houseLevel+1)
+
+Returns favor needed for next level.
+
 
 ]]

@@ -12,7 +12,7 @@
 		<Color r="1" g="1" b="1" />
 	</FontString>
 
-	<Frame name="EndeavorFrame" toplevel="false" parent="UIParent" enableMouse="true" movable="true">
+	<Frame name="EndeavorFrame" toplevel="false" parent="UIParent" enableMouse="true" movable="true" resizable="true">
 		<Size x="316" y="125"/>
 		<ResizeBounds>
 			<minResize x="316" y="125"/>
@@ -64,11 +64,26 @@
 					</Layer>
 				</Layers>
 			</StatusBar>
+				<Button name="$parentResizeButton">
+					<Size x="16" y="16"/>
+						<Anchors>
+							<Anchor point="BOTTOMRIGHT"/>
+						</Anchors>
+						<NormalTexture file="Interface\ChatFrame\UI-ChatIM-SizeGrabber-Up"/>
+						<HighlightTexture file="Interface\ChatFrame\UI-ChatIM-SizeGrabber-Highlight"/>
+						<PushedTexture file="Interface\ChatFrame\UI-ChatIM-SizeGrabber-Down"/>
+						<Scripts>
+							<OnMouseDown>self:GetParent():StartSizing("BOTTOMRIGHT")</OnMouseDown>
+							<OnMouseUp>self:GetParent():StopMovingOrSizing()</OnMouseUp>
+						</Scripts>
+				</Button>
 		</Frames>
 		<Scripts>
 			<OnLoad>ET.OnLoad()</OnLoad>
 			<OnEvent>ET[event]( ... )</OnEvent>
 			<OnUpdate>ET.OnUpdate(elapsed)</OnUpdate>
+			<OnMouseDown>ET.OnDragStart()</OnMouseDown>
+			<OnMouseUp>ET.OnDragStop()</OnMouseUp>
 		</Scripts>
 	</Frame>
 </Ui>
