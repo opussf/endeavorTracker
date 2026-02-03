@@ -17,7 +17,7 @@ function ET.OnLoad()
 	EndeavorFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 end
 function ET.UpdateBars()
-	print("UpdateBars")
+	-- print("UpdateBars")
 	ET.displayData = {}
 	if not ET.myTasks then
 		return -- I HATE early returns.
@@ -60,14 +60,14 @@ function ET.PLAYER_ENTERING_WORLD()
 end
 function ET.INITIATIVE_ACTIVITY_LOG_UPDATED()
 	-- not sure what to do this.
-	print("INITIATIVE_ACTIVITY_LOG_UPDATED")
+	-- print("INITIATIVE_ACTIVITY_LOG_UPDATED")
 end
 function ET.INITIATIVE_COMPLETED( payload )  -- initiative title
 	-- this probably fires when you get the final reward.
-	print("INITIATIVE_COMPLETED: "..payload)
+	-- print("INITIATIVE_COMPLETED: "..payload)
 end
 function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
-	print("INITIATIVE_TASK_COMPLETED: "..payload)
+	-- print("INITIATIVE_TASK_COMPLETED: "..payload)
 	for ID, task in pairs( ET.myTasks ) do
 		if task.taskName == payload then
 			print("Task ("..ID..") was completed. Setting completed to: "..(task.tracked and "True" or "False"))
@@ -77,7 +77,7 @@ function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
 	ET.UpdateBars()
 end
 function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  -- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
-	print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
+	-- print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
 	if added then
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(initiativeTaskID)
 		local newTask = {}
@@ -111,7 +111,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 end
 function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	-- made progress fires this event.
-	print("INITIATIVE_TASKS_TRACKED_UPDATED")
+	-- print("INITIATIVE_TASKS_TRACKED_UPDATED")
 	for ID, task in pairs(ET.myTasks) do
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(ID)
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
@@ -124,7 +124,7 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 end
 function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	-- this fires a lot, but this might be the work hourse function here.
-	print("NEIGHBORHOOD_INITIATIVE_UPDATED")
+	-- print("NEIGHBORHOOD_INITIATIVE_UPDATED")
 	EndeavorFrameBar0:SetMinMaxValues(0, 1000)
 	ET.NeighborhoodInitiativeInfo = C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo()
 	ET.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
@@ -161,7 +161,7 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	ET.BuildBars()
 end
 function ET.BuildBars()
-	print("BuildBars()")
+	-- print("BuildBars()")
 	if not ET.bars then
 		ET.bars = {}
 	end
@@ -171,12 +171,12 @@ function ET.BuildBars()
 		taskCount = taskCount + 1
 	end
 	local barCount = #ET.bars
-	print("I'm tracking "..taskCount.." tasks, and have "..barCount.." bars.")
+	-- print("I'm tracking "..taskCount.." tasks, and have "..barCount.." bars.")
 
 	if taskCount > barCount then
-		print("Need to make bars.")
+		-- print("Need to make bars.")
 		for idx = barCount+1, taskCount do
-			print("Make bar #"..idx)
+			-- print("Make bar #"..idx)
 			ET.bars[idx] = {}
 			local newBar = CreateFrame("StatusBar", "EndeavorFrameBar"..idx, EndeavorFrame, "EndeavorBarTemplate")
 			newBar:SetPoint("TOPLEFT", "EndeavorFrameBar"..idx-1, "BOTTOMLEFT", 0, 0)
@@ -189,9 +189,9 @@ function ET.BuildBars()
 			ET.bars[idx].bar = newBar
 		end
 	elseif taskCount < barCount then
-		print("Need to hide bars.")
+		-- print("Need to hide bars.")
 		for idx = taskCount+1, barCount do
-			print("Hide bar #"..idx)
+			-- print("Hide bar #"..idx)
 		end
 	end
 
@@ -200,26 +200,26 @@ function ET.BuildBars()
 	local EPBottom = EndeavorFrameBar0:GetBottom()   -- ~ 717
 	local taskSizeNeeded = taskCount * barHeight     -- for 10, 120
 	local parentTop = EndeavorFrame:GetTop()
-	local parentBottom = EndeavorFrame:GetBottom()
-	print("I have "..EPBottom-parentBottom.." to fit "..taskCount.." bars.")
-	print("I need "..taskCount*barHeight)
+	-- local parentBottom = EndeavorFrame:GetBottom()
+	-- -- print("I have "..EPBottom-parentBottom.." to fit "..taskCount.." bars.")
+	-- print("I need "..taskCount*barHeight)
 
 	local newHeight = (parentTop - EPBottom) + (taskCount * barHeight) + (barHeight/2)
 	if taskCount*barHeight > EPBottom - parentBottom then
-		print("Set new height to: "..newHeight)
+		-- print("Set new height to: "..newHeight)
 		EndeavorFrame:SetHeight(newHeight)
 	end
 
 	-- set resize
-	local minWidth = EndeavorFrame:GetResizeBounds()  -- minW, minH, maxW, maxH
-	print("minWidth: "..minWidth)
-	print("Set("..minWidth..", "..newHeight..", "..minWidth..", "..newHeight+(3*barHeight)..")")
+	-- local minWidth = EndeavorFrame:GetResizeBounds()  -- minW, minH, maxW, maxH
+	-- -- print("minWidth: "..minWidth)
+	-- print("Set("..minWidth..", "..newHeight..", "..minWidth..", "..newHeight+(3*barHeight)..")")
 	EndeavorFrame:SetResizeBounds(minWidth, newHeight, minWidth, newHeight+(3*barHeight))
 
 end
 
 function ET.HOUSE_LEVEL_FAVOR_UPDATED( payload )
-	print("HOUSE_LEVEL_FAVOR_UPDATED( payload )")
+	-- print("HOUSE_LEVEL_FAVOR_UPDATED( payload )")
 	ET.houseInfo = payload   -- houseLevel, houseFavor, houseGUID
 
 	ET.houseInfo.levelMaxFavor = C_Housing.GetHouseLevelFavorForLevel(ET.houseInfo.houseLevel + 1)
