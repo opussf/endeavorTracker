@@ -211,7 +211,7 @@ function ET.BuildBars()
 	end
 
 	-- set resize
-	-- local minWidth = EndeavorFrame:GetResizeBounds()  -- minW, minH, maxW, maxH
+	local minWidth = EndeavorFrame:GetResizeBounds()  -- minW, minH, maxW, maxH
 	-- print("minWidth: "..minWidth)
 	-- print("Set("..minWidth..", "..newHeight..", "..minWidth..", "..newHeight+(3*barHeight)..")")
 	EndeavorFrame:SetResizeBounds(minWidth, newHeight, minWidth, newHeight+(3*barHeight))
