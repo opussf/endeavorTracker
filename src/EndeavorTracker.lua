@@ -90,7 +90,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 	end
 
 	if not added and ET.myTasks[initiativeTaskID] then
-		C_Timer.After(1, function()
+		C_Timer.After(0.25, function()
 			if ET.myTasks[initiativeTaskID].completed then
 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(initiativeTaskID)
 				ET.myTasks[initiativeTaskID].completed = nil
