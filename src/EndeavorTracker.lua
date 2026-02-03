@@ -105,6 +105,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 					end
 				end
 			end
+			ET.UpdateSize()
 		end)
 	end
 	ET.UpdateBars()
@@ -197,16 +198,35 @@ function ET.HOUSE_LEVEL_FAVOR_UPDATED( payload )
 	ET.houseInfo = payload   -- houseLevel, houseFavor, houseGUID
 
 	ET.houseInfo.levelMaxFavor = C_Housing.GetHouseLevelFavorForLevel(ET.houseInfo.houseLevel + 1)
-	EndeavorFrame_TitleText:SetText(string.format("Endeavor Tracker  (House lvl:%i %i/%i)",
+	EndeavorFrame_TitleText:SetText(string.format("Endeavors (House lvl:%i %i/%i)",
 			ET.houseInfo.houseLevel, ET.houseInfo.houseFavor, ET.houseInfo.levelMaxFavor ))
 end
 function ET.OnDragStart()
 	EndeavorFrame:StartMoving()
 end
-function ET.OnDragEnd()
+function ET.OnDragStop()
 	EndeavorFrame:StopMovingOrSizing()
 end
+function ET.UpdateSize()
+	local taskCount = 0
+	for _, _ in pairs(ET.myTasks) do
+		taskCount = taskCount + 1
+	end
+	local EPBottom = EndeavorFrameBar0:GetBottom()
+	local EPHeight = EndeavorFrameBar0:GetHeight()
+	local frameHeight = EndeavorFrame:GetHeight()
+	local parentTop = EndeavorFrame:GetTop()
+	local parentBottom = EndeavorFrame:GetBottom()
 
+	if taskCount * EPHeight > EPBottom - parentBottom then
+		local newHeight = (parentTop - EPBottom) + (taskCount * EPHeight)
+		EndeavorFrame:SetHeight(newHeight)
+
+		local minWidth, _ = EndeavorFrame:GetMinResize()
+		EndeavorFrame:SetMinResize(minWidth, newHeight)
+		EndeavorFrame:SetMaxResize(minWidth, newHeight + (2 * EPHeight))
+	end
+end
 --[[
 
 
