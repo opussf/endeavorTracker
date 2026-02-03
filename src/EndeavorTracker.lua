@@ -200,8 +200,8 @@ function ET.BuildBars()
 	local EPBottom = EndeavorFrameBar0:GetBottom()   -- ~ 717
 	local taskSizeNeeded = taskCount * barHeight     -- for 10, 120
 	local parentTop = EndeavorFrame:GetTop()
-	-- local parentBottom = EndeavorFrame:GetBottom()
-	-- -- print("I have "..EPBottom-parentBottom.." to fit "..taskCount.." bars.")
+	local parentBottom = EndeavorFrame:GetBottom()
+	-- print("I have "..EPBottom-parentBottom.." to fit "..taskCount.." bars.")
 	-- print("I need "..taskCount*barHeight)
 
 	local newHeight = (parentTop - EPBottom) + (taskCount * barHeight) + (barHeight/2)
@@ -212,7 +212,7 @@ function ET.BuildBars()
 
 	-- set resize
 	-- local minWidth = EndeavorFrame:GetResizeBounds()  -- minW, minH, maxW, maxH
-	-- -- print("minWidth: "..minWidth)
+	-- print("minWidth: "..minWidth)
 	-- print("Set("..minWidth..", "..newHeight..", "..minWidth..", "..newHeight+(3*barHeight)..")")
 	EndeavorFrame:SetResizeBounds(minWidth, newHeight, minWidth, newHeight+(3*barHeight))
 
