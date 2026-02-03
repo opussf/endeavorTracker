@@ -17,8 +17,6 @@ function ET.OnLoad()
 	ET.BuildBars()
 	EndeavorFrame:Show()
 end
-function ET.OnUpdate(elapsed)
-end
 function ET.UpdateBars()
 	ET.displayData = {}
 	if not ET.myTasks then
