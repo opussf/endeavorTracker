@@ -70,7 +70,9 @@ function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
 	-- print("INITIATIVE_TASK_COMPLETED: "..payload)
 	for ID, task in pairs( ET.myTasks ) do
 		if task.taskName == payload then
-			print("Task ("..ID..") was completed. Setting completed to: "..(task.tracked and "True" or "False"))
+			if Endeavor_data.printChat then
+				print(task.taskName.." ("..ID..") was completed.") --" Setting completed to: "..(task.tracked and "True" or "False"))
+			end
 			task.completed = task.tracked
 		end
 	end
@@ -118,7 +120,7 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
 			-- ID matches, requirementText does not.  Progress!
 			task.requirementText = taskInfo.requirementsList[1].requirementText
-			if ET_data.printChat then
+			if Endeavor_data.printChat then
 				print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
 			end
 		end
@@ -261,8 +263,6 @@ function ET.Command(msg)
 		cmdFunc.func(param);
 	elseif ( cmd and cmd ~= "") then  -- exists and not empty
 		ET.PrintHelp()
-	else
-		EndeavorFrame:Show()
 	end
 end
 function ET.PrintHelp()
@@ -281,13 +281,14 @@ ET.CommandList = {
 		["help"] = {"", "Print this help."},
 	},
 	["chat"] = {
-		["func"] = function() ET_data.printChat = not ET_data.printChat end,
+		["func"] = function() Endeavor_data.printChat = not Endeavor_data.printChat end,
 		["help"] = {"", "Toggle chat progress"},
 	},
 	[""] = {
+		["func"] = function() EndeavorFrame:Show() end,
 		["help"] = {"", "Show Endeavor Tracker window."},
 	},
 	["debug"] = {
-		["func"] = function() ET_data.debug = not ET_data.debug end,
+		["func"] = function() Endeavor_data.debug = not Endeavor_data.debug end,
 	},
 }
