@@ -6,7 +6,7 @@ ET.displayData = {}
 
 function ET.OnLoad()
 	SLASH_ET1 = "/ET"
-	SlashCmdList["ET"] = function() EndeavorFrame:Show() end
+	SlashCmdList["ET"] = function(msg) ET.Command(msg) end
 	EndeavorFrame:RegisterEvent("HOUSE_LEVEL_FAVOR_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_COMPLETED")
@@ -94,6 +94,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 			if ET.myTasks[initiativeTaskID].completed then
 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(initiativeTaskID)
 				ET.myTasks[initiativeTaskID].completed = nil
+				-- Refresh here
 			else
 				ET.myTasks[initiativeTaskID] = nil
 				-- remove from displayData
@@ -117,7 +118,9 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
 			-- ID matches, requirementText does not.  Progress!
 			task.requirementText = taskInfo.requirementsList[1].requirementText
-			print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
+			if ET_data.printChat then
+				print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
+			end
 		end
 	end
 	ET.UpdateBars()
@@ -215,9 +218,7 @@ function ET.BuildBars()
 	-- -- print("minWidth: "..minWidth)
 	-- print("Set("..minWidth..", "..newHeight..", "..minWidth..", "..newHeight+(3*barHeight)..")")
 	EndeavorFrame:SetResizeBounds(minWidth, newHeight, minWidth, newHeight+(3*barHeight))
-
 end
-
 function ET.HOUSE_LEVEL_FAVOR_UPDATED( payload )
 	-- print("HOUSE_LEVEL_FAVOR_UPDATED( payload )")
 	ET.houseInfo = payload   -- houseLevel, houseFavor, houseGUID
@@ -232,113 +233,61 @@ end
 function ET.OnDragStop()
 	EndeavorFrame:StopMovingOrSizing()
 end
-
---[[
-
-
-
-
-/dump C_QuestInfoSystem.GetQuestRewardCurrencies(91739)
-quality = 2
-name = "Coupons"
-currencyID = 3363
-total,base,bonusRewardAmmount = 30, 0, 30
-
-
-
-
-function INEED.Fulfill_BuildItemDisplay()
-	if not INEED.Fulfill_ItemFrames then
-		local width, height = INEED_FulfillFrame:GetSize()
-		local rowSize = math.floor( width / 32 )
-		local colSize = math.floor( (height - 50) / 32 )
-		local itemFrame
-
-		INEED.Fulfill_ItemFrames = {}
-
-		for itemFrameNum = 1, rowSize * colSize do -- rowSize * colSize do
-			itemFrame = CreateFrame( "Button", "INEED_FulfillFrameItem"..itemFrameNum, INEED_FulfillFrame, "INEEDItemTemplate" )
-			local col = ((itemFrameNum - 1) % rowSize) + 1
-			local row = math.floor( (itemFrameNum-1) / rowSize ) + 1
-
-			if row == 1 then
-				itemFrame:SetPoint( "TOP", INEED_FulfillFrameFilter, "BOTTOM" )
+function ET.Print(msg)
+	-- print to the chat frame
+	DEFAULT_CHAT_FRAME:AddMessage( msg )
+end
+function ET.ParseCmd(msg)
+	if msg then
+		local i,c = strmatch(msg, "^(|c.*|r)%s*(%d*)$")
+		if i then  -- i is an item, c is a count or nil
+			return i, c
+		else  -- Not a valid item link
+			msg = string.lower(msg)
+			local a,b,c = strfind(msg, "(%S+)")  --contiguous string of non-space characters
+			if a then
+				-- c is the matched string, strsub is everything after that, skipping the space
+				return c, strsub(msg, b+2)
 			else
-				itemFrame:SetPoint( "TOP", INEED.Fulfill_ItemFrames[itemFrameNum-rowSize], "BOTTOM" )
+				return ""
 			end
-			if col == 1 then
-				itemFrame:SetPoint( "LEFT", INEED_FulfillFrame, "LEFT" )
-			else
-				itemFrame:SetPoint( "LEFT", INEED.Fulfill_ItemFrames[itemFrameNum-1], "RIGHT" )
-			end
-			INEED.Fulfill_ItemFrames[itemFrameNum] = itemFrame
+		end
+	end
+end
+function ET.Command(msg)
+	local cmd, param = ET.ParseCmd(msg);
+	local cmdFunc = ET.CommandList[cmd];
+	if cmdFunc then
+		cmdFunc.func(param);
+	elseif ( cmd and cmd ~= "") then  -- exists and not empty
+		ET.PrintHelp()
+	else
+		EndeavorFrame:Show()
+	end
+end
+function ET.PrintHelp()
+	-- ET.Print(INEED_MSG_ADDONNAME.." ("..INEED_MSG_VERSION..") by "..INEED_MSG_AUTHOR);
+	for cmd, info in pairs(ET.CommandList) do
+		if info.help then
+			ET.Print(string.format("%s %s %s -> %s",
+				SLASH_ET1, cmd, info.help[1], info.help[2]));
 		end
 	end
 end
 
-
-/dump C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()
-
-
-/dump C_NeighborhoodInitiative.GetTrackedInitiativeTasks()
-	{ trackedIDs = { 1=43, 2=134 } }
-
-	C_NeighborhoodInitiative.AddTrackedInitiativeTask(taskID)
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo( 43 )
-
-
-/dump C_NeighborhoodInitiative.RequestInitiativeActivityLog()
-
-/dump C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo().currentProgress
-/dump C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo().tasks
-
-
-.tasks[1].requirementsList[1].requirementText
-.tasks[1].ID
-.tasks[1].rewardQuestID  --- Look into this.  ---  NOT this..  :(
-.isLoaded - bool
-.neighborhoodGUID
-.initiativeID
-
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo(43)
-
-/dump C_NeighborhoodInitiative.GetTrackedInitiativeTasks()
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeActivityLogInfo().nextUpdateTime
-/dump C_NeighborhoodInitiative.GetInitiativeActivityLogInfo().taskActivity[1]
-
-{ Name = "nextUpdateTime", Type = "time_t", Nilable = false },
-{ Name = "taskActivity", Type = "table", InnerType = "InitiativeActivityLogEntry", Nilable = false },
-
-
-* Scan for initiveID
-* Scan for Task info.  [ID] = "NAME"
-* Store if you are tracking
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo(102).rewardQuestID
-
-
-/dump C_Housing.GetCurrentHouseInfo()
-
-HouseGUID
-
-
-/dump C_Housing.GetCurrentHouseLevelFavor("Opaque-4")
-
-Fires event "HOUSE_LEVEL_FAVOR_UPDATED" with this payload:
-houseLevel 6
-houseFavor 6090  (xp)
-houseGUID  Opaque-1
-
-/dump C_Housing.GetHouseLevelFavorForLevel(houseLevel+1)
-
-Returns favor needed for next level.
-
-
-]]
+ET.CommandList = {
+	["help"] = {
+		["func"] = ET.PrintHelp,
+		["help"] = {"", "Print this help."},
+	},
+	["chat"] = {
+		["func"] = function() ET_data.printChat = not ET_data.printChat end,
+		["help"] = {"", "Toggle chat progress"},
+	},
+	[""] = {
+		["help"] = {"", "Show Endeavor Tracker window."},
+	},
+	["debug"] = {
+		["func"] = function() ET_data.debug = not ET_data.debug end,
+	},
+}
