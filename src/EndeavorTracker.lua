@@ -62,14 +62,20 @@ function ET.PLAYER_ENTERING_WORLD()
 end
 function ET.INITIATIVE_ACTIVITY_LOG_UPDATED()
 	-- not sure what to do this.
-	-- print("INITIATIVE_ACTIVITY_LOG_UPDATED")
+	if Endeavor_data.debug then
+		print("INITIATIVE_ACTIVITY_LOG_UPDATED")
+	end
 end
 function ET.INITIATIVE_COMPLETED( payload )  -- initiative title
 	-- this probably fires when you get the final reward.
-	-- print("INITIATIVE_COMPLETED: "..payload)
+	if Endeavor_data.debug then
+		print("INITIATIVE_COMPLETED: "..payload)
+	end
 end
 function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
-	-- print("INITIATIVE_TASK_COMPLETED: "..payload)
+	if Endeavor_data.debug then
+		print("INITIATIVE_TASK_COMPLETED: "..payload)
+	end
 	for ID, task in pairs( ET.myTasks ) do
 		if task.taskName == payload then
 			if Endeavor_data.printChat then
@@ -80,8 +86,11 @@ function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
 	end
 	ET.UpdateBars()
 end
-function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  -- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
-	-- print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
+function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )
+	-- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
+	if Endeavor_data.debug then
+		print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
+	end
 	if added then
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(initiativeTaskID)
 		local newTask = {}
@@ -95,10 +104,10 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 
 	if not added and ET.myTasks[initiativeTaskID] then
 		C_Timer.After(0.25, function()
+			print("Remove "..initiativeTaskID.."?")
 			if ET.myTasks[initiativeTaskID].completed then
 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(initiativeTaskID)
 				ET.myTasks[initiativeTaskID].completed = nil
-				-- Refresh here
 			else
 				ET.myTasks[initiativeTaskID] = nil
 				-- remove from displayData
@@ -107,8 +116,10 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 						ET.displayData[idx] = nil
 					end
 				end
+				print("YES!")
+				ET.BuildBars()
+				ET.UpdateBars()
 			end
-
 		end)
 	end
 	ET.BuildBars()
@@ -116,7 +127,9 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 end
 function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	-- made progress fires this event.
-	-- print("INITIATIVE_TASKS_TRACKED_UPDATED")
+	if Endeavor_data.debug then
+		print("INITIATIVE_TASKS_TRACKED_UPDATED")
+	end
 	for ID, task in pairs(ET.myTasks) do
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(ID)
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
@@ -131,7 +144,9 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 end
 function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	-- this fires a lot, but this might be the work hourse function here.
-	-- print("NEIGHBORHOOD_INITIATIVE_UPDATED")
+	if Endeavor_data.debug then
+		print("NEIGHBORHOOD_INITIATIVE_UPDATED")
+	end
 	EndeavorFrameBar0:SetMinMaxValues(0, 1000)
 	ET.NeighborhoodInitiativeInfo = C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo()
 	ET.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
@@ -291,6 +306,6 @@ ET.CommandList = {
 		["help"] = {"", "Show Endeavor Tracker window."},
 	},
 	["debug"] = {
-		["func"] = function() Endeavor_data.debug = not Endeavor_data.debug end,
+		["func"] = function() Endeavor_data.debug = not Endeavor_data.debug; print("ET Debug is: "..(Endeavor_data.debug and "ON" or "OFF")) end,
 	},
 }
