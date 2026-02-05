@@ -1,5 +1,11 @@
 ET_SLUG, ET = ...
+ET.MSG_ADDONNAME = C_AddOns.GetAddOnMetadata( ET_SLUG, "Title" )
+ET.MSG_VERSION   = C_AddOns.GetAddOnMetadata( ET_SLUG, "Version")
+ET.MSG_AUTHOR    = C_AddOns.GetAddOnMetadata( ET_SLUG, "Author" )
 
+
+ET.COLOR_YELLOW = "|cffffff00"
+ET.COLOR_END = "|r"
 -- Saved Variables
 Endeavor_data = {}
 
@@ -148,19 +154,23 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 		print("NEIGHBORHOOD_INITIATIVE_UPDATED")
 	end
 	EndeavorFrameBar0:SetMinMaxValues(0, 1000)
+	EndeavorFrameBar0Top:SetMinMaxValues(0, 1000)
 	ET.NeighborhoodInitiativeInfo = C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo()
 	ET.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
 	ET.progressRequired = ET.NeighborhoodInitiativeInfo.progressRequired
-	EndeavorFrameBar0:SetValue(ET.currentProgress)
-	EndeavorFrameBar0.text:SetText(
-			string.format("Endeavor Progress: %i / %i", ET.currentProgress, ET.progressRequired))
-	EndeavorFrame:Show()
 
 	-- store some general info
 	ET.neighborhoodGUID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID
 	ET.playerTotalContribution = ET.NeighborhoodInitiativeInfo.playerTotalContribution
+	EndeavorFrameBar0Top:SetValue(ET.playerTotalContribution)
+	EndeavorFrameBar0:SetValue(ET.currentProgress)
+	EndeavorFrameBar0Top.text:SetText(
+			string.format("Endeavor Progress: %i (%i) / %i",
+				ET.currentProgress, ET.playerTotalContribution, ET.progressRequired))
+	EndeavorFrame:Show()
 
-	ET.initiativeID = ET.NeighborhoodInitiativeInfo.playerTotalContribution
+
+	ET.initiativeID = ET.NeighborhoodInitiativeInfo.initiativeID
 	ET.initiativeTitle = ET.NeighborhoodInitiativeInfo.title
 
 	ET.myTasks = ET.myTasks or {}  -- [id] = {}
@@ -179,7 +189,7 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 		-- 	ET.myTasks[task.ID] = nil
 		-- end
 	end
-	-- ET.dump = ET.NeighborhoodInitiativeInfo
+	Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
 	ET.BuildBars()
 end
 function ET.BuildBars()
@@ -252,6 +262,12 @@ end
 function ET.OnDragStop()
 	EndeavorFrame:StopMovingOrSizing()
 end
+function ET.ResetUIPosition()
+	EndeavorFrame:ClearAllPoints()
+	EndeavorFrame:SetPoint("LEFT", "$parent", "LEFT")
+	EndeavorFrame:SetHeight( 1 )
+	ET.BuildBars()
+end
 function ET.Print(msg)
 	-- print to the chat frame
 	DEFAULT_CHAT_FRAME:AddMessage( msg )
@@ -283,11 +299,11 @@ function ET.Command(msg)
 	end
 end
 function ET.PrintHelp()
-	-- ET.Print(INEED_MSG_ADDONNAME.." ("..INEED_MSG_VERSION..") by "..INEED_MSG_AUTHOR);
+	ET.Print(ET.MSG_ADDONNAME.." ("..ET.MSG_VERSION..") by "..ET.MSG_AUTHOR);
 	for cmd, info in pairs(ET.CommandList) do
 		if info.help then
-			ET.Print(string.format("%s %s %s -> %s",
-				SLASH_ET1, cmd, info.help[1], info.help[2]));
+			ET.Print(string.format("%s%s %s%s %s -> %s",
+				ET.COLOR_YELLOW, SLASH_ET1, cmd, ET.COLOR_END, info.help[1], info.help[2]));
 		end
 	end
 end
@@ -298,12 +314,19 @@ ET.CommandList = {
 		["help"] = {"", "Print this help."},
 	},
 	["chat"] = {
-		["func"] = function() Endeavor_data.printChat = not Endeavor_data.printChat end,
+		["func"] = function()
+				Endeavor_data.printChat = not Endeavor_data.printChat
+				print(ET.MSG_ADDONNAME.." chatOutput is: "..(Endeavor_data.printChat and "ON" or "OFF"))
+			end,
 		["help"] = {"", "Toggle chat progress"},
 	},
 	[""] = {
 		["func"] = function() EndeavorFrame:Show() end,
 		["help"] = {"", "Show Endeavor Tracker window."},
+	},
+	["reset"] = {
+		["func"] = ET.ResetUIPosition,
+		["help"] = {"", "Resets window position."},
 	},
 	["debug"] = {
 		["func"] = function() Endeavor_data.debug = not Endeavor_data.debug; print("ET Debug is: "..(Endeavor_data.debug and "ON" or "OFF")) end,

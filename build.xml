@@ -71,7 +71,7 @@
 		<include name="src/*.xml"/>
 		<include name="src/*.toc"/>
 		<include name="src/*.lua"/>
-		<include name="Readme.md"/>
+		<include name="README.md"/>
 		<include name="${working.dir}/*.txt"/>
 	</patternset>
 
