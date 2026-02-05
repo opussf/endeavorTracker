@@ -1,12 +1,20 @@
 ET_SLUG, ET = ...
+ET.MSG_ADDONNAME = C_AddOns.GetAddOnMetadata( ET_SLUG, "Title" )
+ET.MSG_VERSION   = C_AddOns.GetAddOnMetadata( ET_SLUG, "Version")
+ET.MSG_AUTHOR    = C_AddOns.GetAddOnMetadata( ET_SLUG, "Author" )
 
+
+ET.COLOR_YELLOW = "|cffffff00"
+ET.COLOR_END = "|r"
 -- Saved Variables
+Endeavor_data = {}
+
 ET.myTasks = {}
 ET.displayData = {}
 
 function ET.OnLoad()
 	SLASH_ET1 = "/ET"
-	SlashCmdList["ET"] = function() EndeavorFrame:Show() end
+	SlashCmdList["ET"] = function(msg) ET.Command(msg) end
 	EndeavorFrame:RegisterEvent("HOUSE_LEVEL_FAVOR_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
 	-- EndeavorFrame:RegisterEvent("INITIATIVE_COMPLETED")
@@ -60,24 +68,35 @@ function ET.PLAYER_ENTERING_WORLD()
 end
 function ET.INITIATIVE_ACTIVITY_LOG_UPDATED()
 	-- not sure what to do this.
-	-- print("INITIATIVE_ACTIVITY_LOG_UPDATED")
+	if Endeavor_data.debug then
+		print("INITIATIVE_ACTIVITY_LOG_UPDATED")
+	end
 end
 function ET.INITIATIVE_COMPLETED( payload )  -- initiative title
 	-- this probably fires when you get the final reward.
-	-- print("INITIATIVE_COMPLETED: "..payload)
+	if Endeavor_data.debug then
+		print("INITIATIVE_COMPLETED: "..payload)
+	end
 end
 function ET.INITIATIVE_TASK_COMPLETED( payload ) -- task name
-	-- print("INITIATIVE_TASK_COMPLETED: "..payload)
+	if Endeavor_data.debug then
+		print("INITIATIVE_TASK_COMPLETED: "..payload)
+	end
 	for ID, task in pairs( ET.myTasks ) do
 		if task.taskName == payload then
-			print("Task ("..ID..") was completed. Setting completed to: "..(task.tracked and "True" or "False"))
+			if Endeavor_data.printChat then
+				print(task.taskName.." ("..ID..") was completed.") --" Setting completed to: "..(task.tracked and "True" or "False"))
+			end
 			task.completed = task.tracked
 		end
 	end
 	ET.UpdateBars()
 end
-function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  -- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
-	-- print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
+function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )
+	-- { Name = "initiativeTaskID", Type = "number", Name = "added", Type = "bool" },
+	if Endeavor_data.debug then
+		print("INITIATIVE_TASKS_TRACKED_LIST_CHANGED: "..initiativeTaskID.." added: "..(added and "True" or "False") )
+	end
 	if added then
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(initiativeTaskID)
 		local newTask = {}
@@ -91,6 +110,7 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 
 	if not added and ET.myTasks[initiativeTaskID] then
 		C_Timer.After(0.25, function()
+			print("Remove "..initiativeTaskID.."?")
 			if ET.myTasks[initiativeTaskID].completed then
 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(initiativeTaskID)
 				ET.myTasks[initiativeTaskID].completed = nil
@@ -102,8 +122,10 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 						ET.displayData[idx] = nil
 					end
 				end
+				print("YES!")
+				ET.BuildBars()
+				ET.UpdateBars()
 			end
-
 		end)
 	end
 	ET.BuildBars()
@@ -111,34 +133,44 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )  --
 end
 function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	-- made progress fires this event.
-	-- print("INITIATIVE_TASKS_TRACKED_UPDATED")
+	if Endeavor_data.debug then
+		print("INITIATIVE_TASKS_TRACKED_UPDATED")
+	end
 	for ID, task in pairs(ET.myTasks) do
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(ID)
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
 			-- ID matches, requirementText does not.  Progress!
 			task.requirementText = taskInfo.requirementsList[1].requirementText
-			print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
+			if Endeavor_data.printChat then
+				print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
+			end
 		end
 	end
 	ET.UpdateBars()
 end
 function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	-- this fires a lot, but this might be the work hourse function here.
-	-- print("NEIGHBORHOOD_INITIATIVE_UPDATED")
+	if Endeavor_data.debug then
+		print("NEIGHBORHOOD_INITIATIVE_UPDATED")
+	end
 	EndeavorFrameBar0:SetMinMaxValues(0, 1000)
+	EndeavorFrameBar0Top:SetMinMaxValues(0, 1000)
 	ET.NeighborhoodInitiativeInfo = C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo()
 	ET.currentProgress = ET.NeighborhoodInitiativeInfo.currentProgress
 	ET.progressRequired = ET.NeighborhoodInitiativeInfo.progressRequired
-	EndeavorFrameBar0:SetValue(ET.currentProgress)
-	EndeavorFrameBar0.text:SetText(
-			string.format("Endeavor Progress: %i / %i", ET.currentProgress, ET.progressRequired))
-	EndeavorFrame:Show()
 
 	-- store some general info
 	ET.neighborhoodGUID = ET.NeighborhoodInitiativeInfo.neighborhoodGUID
 	ET.playerTotalContribution = ET.NeighborhoodInitiativeInfo.playerTotalContribution
+	EndeavorFrameBar0Top:SetValue(ET.playerTotalContribution)
+	EndeavorFrameBar0:SetValue(ET.currentProgress)
+	EndeavorFrameBar0Top.text:SetText(
+			string.format("Endeavor Progress: %i (%i) / %i",
+				ET.currentProgress, ET.playerTotalContribution, ET.progressRequired))
+	EndeavorFrame:Show()
 
-	ET.initiativeID = ET.NeighborhoodInitiativeInfo.playerTotalContribution
+
+	ET.initiativeID = ET.NeighborhoodInitiativeInfo.initiativeID
 	ET.initiativeTitle = ET.NeighborhoodInitiativeInfo.title
 
 	ET.myTasks = ET.myTasks or {}  -- [id] = {}
@@ -157,7 +189,7 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 		-- 	ET.myTasks[task.ID] = nil
 		-- end
 	end
-	-- ET.dump = ET.NeighborhoodInitiativeInfo
+	Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
 	ET.BuildBars()
 end
 function ET.BuildBars()
@@ -215,9 +247,7 @@ function ET.BuildBars()
 	-- print("minWidth: "..minWidth)
 	-- print("Set("..minWidth..", "..newHeight..", "..minWidth..", "..newHeight+(3*barHeight)..")")
 	EndeavorFrame:SetResizeBounds(minWidth, newHeight, minWidth, newHeight+(3*barHeight))
-
 end
-
 function ET.HOUSE_LEVEL_FAVOR_UPDATED( payload )
 	-- print("HOUSE_LEVEL_FAVOR_UPDATED( payload )")
 	ET.houseInfo = payload   -- houseLevel, houseFavor, houseGUID
@@ -232,113 +262,73 @@ end
 function ET.OnDragStop()
 	EndeavorFrame:StopMovingOrSizing()
 end
-
---[[
-
-
-
-
-/dump C_QuestInfoSystem.GetQuestRewardCurrencies(91739)
-quality = 2
-name = "Coupons"
-currencyID = 3363
-total,base,bonusRewardAmmount = 30, 0, 30
-
-
-
-
-function INEED.Fulfill_BuildItemDisplay()
-	if not INEED.Fulfill_ItemFrames then
-		local width, height = INEED_FulfillFrame:GetSize()
-		local rowSize = math.floor( width / 32 )
-		local colSize = math.floor( (height - 50) / 32 )
-		local itemFrame
-
-		INEED.Fulfill_ItemFrames = {}
-
-		for itemFrameNum = 1, rowSize * colSize do -- rowSize * colSize do
-			itemFrame = CreateFrame( "Button", "INEED_FulfillFrameItem"..itemFrameNum, INEED_FulfillFrame, "INEEDItemTemplate" )
-			local col = ((itemFrameNum - 1) % rowSize) + 1
-			local row = math.floor( (itemFrameNum-1) / rowSize ) + 1
-
-			if row == 1 then
-				itemFrame:SetPoint( "TOP", INEED_FulfillFrameFilter, "BOTTOM" )
+function ET.ResetUIPosition()
+	EndeavorFrame:ClearAllPoints()
+	EndeavorFrame:SetPoint("LEFT", "$parent", "LEFT")
+	EndeavorFrame:SetHeight( 1 )
+	ET.BuildBars()
+end
+function ET.Print(msg)
+	-- print to the chat frame
+	DEFAULT_CHAT_FRAME:AddMessage( msg )
+end
+function ET.ParseCmd(msg)
+	if msg then
+		local i,c = strmatch(msg, "^(|c.*|r)%s*(%d*)$")
+		if i then  -- i is an item, c is a count or nil
+			return i, c
+		else  -- Not a valid item link
+			msg = string.lower(msg)
+			local a,b,c = strfind(msg, "(%S+)")  --contiguous string of non-space characters
+			if a then
+				-- c is the matched string, strsub is everything after that, skipping the space
+				return c, strsub(msg, b+2)
 			else
-				itemFrame:SetPoint( "TOP", INEED.Fulfill_ItemFrames[itemFrameNum-rowSize], "BOTTOM" )
+				return ""
 			end
-			if col == 1 then
-				itemFrame:SetPoint( "LEFT", INEED_FulfillFrame, "LEFT" )
-			else
-				itemFrame:SetPoint( "LEFT", INEED.Fulfill_ItemFrames[itemFrameNum-1], "RIGHT" )
-			end
-			INEED.Fulfill_ItemFrames[itemFrameNum] = itemFrame
+		end
+	end
+end
+function ET.Command(msg)
+	local cmd, param = ET.ParseCmd(msg);
+	local cmdFunc = ET.CommandList[cmd];
+	if cmdFunc then
+		cmdFunc.func(param);
+	elseif ( cmd and cmd ~= "") then  -- exists and not empty
+		ET.PrintHelp()
+	end
+end
+function ET.PrintHelp()
+	ET.Print(ET.MSG_ADDONNAME.." ("..ET.MSG_VERSION..") by "..ET.MSG_AUTHOR);
+	for cmd, info in pairs(ET.CommandList) do
+		if info.help then
+			ET.Print(string.format("%s%s %s%s %s -> %s",
+				ET.COLOR_YELLOW, SLASH_ET1, cmd, ET.COLOR_END, info.help[1], info.help[2]));
 		end
 	end
 end
 
-
-/dump C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()
-
-
-/dump C_NeighborhoodInitiative.GetTrackedInitiativeTasks()
-	{ trackedIDs = { 1=43, 2=134 } }
-
-	C_NeighborhoodInitiative.AddTrackedInitiativeTask(taskID)
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo( 43 )
-
-
-/dump C_NeighborhoodInitiative.RequestInitiativeActivityLog()
-
-/dump C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo().currentProgress
-/dump C_NeighborhoodInitiative.GetNeighborhoodInitiativeInfo().tasks
-
-
-.tasks[1].requirementsList[1].requirementText
-.tasks[1].ID
-.tasks[1].rewardQuestID  --- Look into this.  ---  NOT this..  :(
-.isLoaded - bool
-.neighborhoodGUID
-.initiativeID
-
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo(43)
-
-/dump C_NeighborhoodInitiative.GetTrackedInitiativeTasks()
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeActivityLogInfo().nextUpdateTime
-/dump C_NeighborhoodInitiative.GetInitiativeActivityLogInfo().taskActivity[1]
-
-{ Name = "nextUpdateTime", Type = "time_t", Nilable = false },
-{ Name = "taskActivity", Type = "table", InnerType = "InitiativeActivityLogEntry", Nilable = false },
-
-
-* Scan for initiveID
-* Scan for Task info.  [ID] = "NAME"
-* Store if you are tracking
-
-
-/dump C_NeighborhoodInitiative.GetInitiativeTaskInfo(102).rewardQuestID
-
-
-/dump C_Housing.GetCurrentHouseInfo()
-
-HouseGUID
-
-
-/dump C_Housing.GetCurrentHouseLevelFavor("Opaque-4")
-
-Fires event "HOUSE_LEVEL_FAVOR_UPDATED" with this payload:
-houseLevel 6
-houseFavor 6090  (xp)
-houseGUID  Opaque-1
-
-/dump C_Housing.GetHouseLevelFavorForLevel(houseLevel+1)
-
-Returns favor needed for next level.
-
-
-]]
+ET.CommandList = {
+	["help"] = {
+		["func"] = ET.PrintHelp,
+		["help"] = {"", "Print this help."},
+	},
+	["chat"] = {
+		["func"] = function()
+				Endeavor_data.printChat = not Endeavor_data.printChat
+				print(ET.MSG_ADDONNAME.." chatOutput is: "..(Endeavor_data.printChat and "ON" or "OFF"))
+			end,
+		["help"] = {"", "Toggle chat progress"},
+	},
+	[""] = {
+		["func"] = function() EndeavorFrame:Show() end,
+		["help"] = {"", "Show Endeavor Tracker window."},
+	},
+	["reset"] = {
+		["func"] = ET.ResetUIPosition,
+		["help"] = {"", "Resets window position."},
+	},
+	["debug"] = {
+		["func"] = function() Endeavor_data.debug = not Endeavor_data.debug; print("ET Debug is: "..(Endeavor_data.debug and "ON" or "OFF")) end,
+	},
+}
