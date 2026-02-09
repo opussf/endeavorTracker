@@ -4,7 +4,7 @@
 	<!-- Version 2.0 -->
 
 	<StatusBar name="EndeavorBarTemplate" inherits="TextStatusBar" virtual="true">
-		<Size x="316" y="12"/>
+		<Size x="250" y="12"/>
 		<BarTexture file="Interface\TargetingFrame\UI-StatusBar" />
 		<BarColor r="0.0" g="0.3" b="0.9" />
 	</StatusBar>
@@ -13,10 +13,10 @@
 	</FontString>
 
 	<Frame name="EndeavorFrame" toplevel="false" parent="UIParent" enableMouse="true" movable="true" resizable="true">
-		<Size x="316" y="40"/>
+		<Size x="250" y="40"/>
 		<ResizeBounds>
-			<minResize x="316" y="40"/>
-			<maxResize x="316" y="773"/>
+			<minResize x="250" y="40"/>
+			<maxResize x="250" y="773"/>
 		</ResizeBounds>
 		<Anchors>
 			<Anchor point="LEFT"/>

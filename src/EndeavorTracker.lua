@@ -50,10 +50,11 @@ function ET.UpdateBars()
 			barLine.bar:SetMinMaxValues(0,150)
 			barLine.bar:SetValue(ET.displayData[idx].progressContributionAmount)
 			barLine.bar.text:SetText(
-					string.format("%2i %s %s",
+					string.format("%2i %s %i / %i",
 							ET.displayData[idx].progressContributionAmount,
 							ET.displayData[idx].taskName,
-							ET.displayData[idx].requirementText
+							ET.displayData[idx].progress,
+							ET.displayData[idx].goal
 					)
 			)
 			barLine.bar:Show()
@@ -109,8 +110,10 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )
 		newTask.taskName = taskInfo.taskName
 		newTask.requirementText = taskInfo.requirementsList[1].requirementText
 		newTask.progressContributionAmount = taskInfo.progressContributionAmount
+		ET.ParseRequirement(newTask)
 		newTask.tracked = true
 		newTask.rewardQuestID = taskInfo.rewardQuestID
+		print(taskInfo.rewardQuestID)
 		ET.myTasks[initiativeTaskID] = newTask
 	end
 
@@ -145,6 +148,7 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
 			-- ID matches, requirementText does not.  Progress!
 			task.requirementText = taskInfo.requirementsList[1].requirementText
+			ET.ParseRequirement(task)
 			if Endeavor_data.printChat then
 				print("Progress on ("..ID..") "..task.taskName.." "..task.requirementText)
 			end
@@ -184,6 +188,7 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 			local newTask = {}
 			newTask.taskName = task.taskName
 			newTask.requirementText = task.requirementsList[1].requirementText
+			ET.ParseRequirement(newTask)
 			newTask.progressContributionAmount = task.progressContributionAmount
 			newTask.tracked = true
 			newTask.rewardQuestID = task.rewardQuestID
@@ -195,6 +200,10 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 	end
 	-- Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
 	ET.BuildBars()
+end
+function ET.ParseRequirement(task, requirementText)
+	requirementText = requirementText or (task.requirementText)
+	task.progress, task.goal = string.match(requirementText, "(%d+) / (%d+)")
 end
 function ET.BuildBars()
 	-- print("BuildBars()")
