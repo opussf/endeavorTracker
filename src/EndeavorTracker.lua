@@ -64,7 +64,13 @@ function ET.UpdateBars()
 end
 function ET.PLAYER_ENTERING_WORLD()
 	-- make sure Initiative Info is loaded.
-	C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()
+	local activeNeighborhoodID = C_NeighborhoodInitiative.GetActiveNeighborhood()
+	if activeNeighborhoodID == nil then
+		C_Timer.After(1, function() ET.PLAYER_ENTERING_WORLD() end )
+	else
+		C_NeighborhoodInitiative.SetViewingNeighborhood(activeNeighborhoodID)
+		C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()
+    end
 end
 function ET.INITIATIVE_ACTIVITY_LOG_UPDATED()
 	-- not sure what to do this.
@@ -187,7 +193,7 @@ function ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 		-- 	ET.myTasks[task.ID] = nil
 		-- end
 	end
-	Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
+	-- Endeavor_data.dump = ET.NeighborhoodInitiativeInfo
 	ET.BuildBars()
 end
 function ET.BuildBars()

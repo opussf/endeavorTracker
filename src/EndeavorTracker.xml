@@ -13,7 +13,7 @@
 	</FontString>
 
 	<Frame name="EndeavorFrame" toplevel="false" parent="UIParent" enableMouse="true" movable="true" resizable="true">
-		<Size x="316" y="125"/>
+		<Size x="316" y="40"/>
 		<ResizeBounds>
 			<minResize x="316" y="40"/>
 			<maxResize x="316" y="773"/>
