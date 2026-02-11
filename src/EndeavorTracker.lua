@@ -280,14 +280,14 @@ function ET.BarMenuGenerator(owner, rootDescription)
 	rootDescription:CreateButton("Untrack "..ET.myTasks[owner.taskID].taskName, function()
 			C_NeighborhoodInitiative.RemoveTrackedInitiativeTask(owner.taskID)
 		end)
-	-- rootDescription:CreateDivider()
-	-- for _, task in pairs( ET.NeighborhoodInitiativeInfo.tasks ) do
-	-- 	if not task.tracked then
-	-- 		rootDescription:CreateButton("Track ("..task.progressContributionAmount..") "..task.taskName, function()
-	-- 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(task.ID)
-	-- 			end)
-	-- 	end
-	-- end
+	rootDescription:CreateDivider()
+	for _, task in pairs( ET.NeighborhoodInitiativeInfo.tasks ) do
+		if not task.tracked then
+			rootDescription:CreateButton("Track ("..task.progressContributionAmount..") "..task.taskName, function()
+					C_NeighborhoodInitiative.AddTrackedInitiativeTask(task.ID)
+				end)
+		end
+	end
 end
 function ET.Print(msg)
 	-- print to the chat frame
