@@ -49,14 +49,11 @@ function ET.UpdateBars()
 		if ET.displayData[idx] then
 			barLine.bar:SetMinMaxValues(0,ET.displayData[idx].goal)
 			barLine.bar:SetValue(ET.displayData[idx].progress)
-			barLine.bar.text:SetText(
-					string.format("%2i (%i/%i) %s",
-							ET.displayData[idx].progressContributionAmount,
-							ET.displayData[idx].progress,
-							ET.displayData[idx].goal,
-							ET.displayData[idx].taskName
-					)
-			)
+			barLine.bar.textLeft:SetText(string.format("%i", ET.displayData[idx].progressContributionAmount))
+			barLine.bar.textCenter1:SetText(string.format("%i/", ET.displayData[idx].progress))
+			barLine.bar.textCenter2:SetText(string.format("%i", ET.displayData[idx].goal))
+			barLine.bar.textRight:SetText(ET.displayData[idx].taskName)
+
 			barLine.bar.taskID = ET.displayData[idx].ID
 			barLine.bar:Show()
 		else
@@ -114,7 +111,6 @@ function ET.INITIATIVE_TASKS_TRACKED_LIST_CHANGED( initiativeTaskID, added )
 		ET.ParseRequirement(newTask)
 		newTask.tracked = true
 		newTask.rewardQuestID = taskInfo.rewardQuestID
-		print(taskInfo.rewardQuestID)
 		ET.myTasks[initiativeTaskID] = newTask
 	end
 
@@ -211,13 +207,11 @@ function ET.BuildBars()
 	if not ET.bars then
 		ET.bars = {}
 	end
-
 	local taskCount = 0
 	for _,_ in pairs(ET.myTasks) do
 		taskCount = taskCount + 1
 	end
 	local barCount = #ET.bars
-	-- print("I'm tracking "..taskCount.." tasks, and have "..barCount.." bars.")
 
 	if taskCount > barCount then
 		-- print("Need to make bars.")
@@ -228,10 +222,24 @@ function ET.BuildBars()
 			newBar:SetPoint("TOPLEFT", "EndeavorFrameBar"..idx-1, "BOTTOMLEFT", 0, 0)
 			newBar:SetMinMaxValues(0,150)
 			newBar:SetValue(0)
-			--newBar:SetScript("OnClick", func)
-			local text = newBar:CreateFontString("EndeavorFrameBarText"..idx, "OVERLAY", "EndeavorBarTextTemplate")
-			text:SetPoint("LEFT", newBar, "LEFT", 5, 0)
-			newBar.text = text
+			local text = newBar:CreateFontString("EndeavorFrameBarTextLeft"..idx, "OVERLAY", "EndeavorBarTextTemplate")
+			text:SetPoint("LEFT", newBar, "LEFT", 0, 0)
+			text:SetWidth(23)
+			text:SetJustifyH("RIGHT")
+			newBar.textLeft = text
+			text = newBar:CreateFontString("EndeavorFrameBarTextProgress"..idx, "OVERLAY", "EndeavorBarTextTemplate")
+			text:SetPoint("LEFT", newBar.textLeft, "RIGHT", 0, 0)
+			text:SetWidth(32)
+			text:SetJustifyH("RIGHT")
+			newBar.textCenter1 = text
+			text = newBar:CreateFontString("EndeavorFrameBarTextGoal"..idx, "OVERLAY", "EndeavorBarTextTemplate")
+			text:SetPoint("LEFT", newBar.textCenter1, "RIGHT", 0, 0)
+			text:SetWidth(30)
+			text:SetJustifyH("LEFT")
+			newBar.textCenter2 = text
+			text = newBar:CreateFontString("EndeavorFrameBarTextTitle"..idx, "OVERLAY", "EndeavorBarTextTemplate")
+			text:SetPoint("LEFT", newBar.textCenter2, "RIGHT", 2, 0)
+			newBar.textRight = text
 			ET.bars[idx].bar = newBar
 		end
 	elseif taskCount < barCount then
@@ -286,10 +294,12 @@ function ET.BarOnMouseUp(self, button)
 	if button == "RightButton" then MenuUtil.CreateContextMenu(self, ET.BarMenuGenerator) end
 end
 function ET.BarMenuGenerator(owner, rootDescription)
-	rootDescription:CreateButton("Untrack "..ET.myTasks[owner.taskID].taskName, function()
-			C_NeighborhoodInitiative.RemoveTrackedInitiativeTask(owner.taskID)
-		end)
-	rootDescription:CreateDivider()
+	if owner.taskID then
+		rootDescription:CreateButton("Untrack "..ET.myTasks[owner.taskID].taskName, function()
+				C_NeighborhoodInitiative.RemoveTrackedInitiativeTask(owner.taskID)
+			end)
+		rootDescription:CreateDivider()
+	end
 	for _, task in pairs( ET.NeighborhoodInitiativeInfo.tasks ) do
 		if not task.tracked then
 			rootDescription:CreateButton("Track ("..task.progressContributionAmount..") "..task.taskName, function()
