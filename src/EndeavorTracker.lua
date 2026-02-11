@@ -315,7 +315,7 @@ function ET.BarMenuGenerator(owner, rootDescription)
 		if l.progressContributionAmount > r.progressContributionAmount then
 			return true
 		elseif l.progressContributionAmount == r.progressContributionAmount then
-			return l.ID < r.ID
+			return l.taskName < r.taskName
 		end
 		return false
 	end)
