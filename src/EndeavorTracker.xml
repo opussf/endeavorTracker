@@ -7,6 +7,9 @@
 		<Size x="250" y="12"/>
 		<BarTexture file="Interface\TargetingFrame\UI-StatusBar" />
 		<BarColor r="0.0" g="0.3" b="0.9" />
+		<Scripts>
+			<OnMouseUp>ET.BarOnMouseUp(self, button)</OnMouseUp>
+		</Scripts>
 	</StatusBar>
 	<FontString name="EndeavorBarTextTemplate" inherits="GameFontNormalSmall" virtual="true">
 		<Color r="1" g="1" b="1" />
