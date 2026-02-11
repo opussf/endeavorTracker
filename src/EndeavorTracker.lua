@@ -47,14 +47,14 @@ function ET.UpdateBars()
 
 	for idx, barLine in pairs(ET.bars) do
 		if ET.displayData[idx] then
-			barLine.bar:SetMinMaxValues(0,150)
-			barLine.bar:SetValue(ET.displayData[idx].progressContributionAmount)
+			barLine.bar:SetMinMaxValues(0,ET.displayData[idx].goal)
+			barLine.bar:SetValue(ET.displayData[idx].progress)
 			barLine.bar.text:SetText(
-					string.format("%2i %s %i / %i",
+					string.format("%2i (%i/%i) %s",
 							ET.displayData[idx].progressContributionAmount,
-							ET.displayData[idx].taskName,
 							ET.displayData[idx].progress,
-							ET.displayData[idx].goal
+							ET.displayData[idx].goal,
+							ET.displayData[idx].taskName
 					)
 			)
 			barLine.bar.taskID = ET.displayData[idx].ID
