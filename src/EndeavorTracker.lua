@@ -297,15 +297,33 @@ function ET.BarMenuGenerator(owner, rootDescription)
 	if owner.taskID then
 		rootDescription:CreateButton("Untrack "..ET.myTasks[owner.taskID].taskName, function()
 				C_NeighborhoodInitiative.RemoveTrackedInitiativeTask(owner.taskID)
+				ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
 			end)
 		rootDescription:CreateDivider()
 	end
+	-- Add items
+	local sortedTasks = {}
 	for _, task in pairs( ET.NeighborhoodInitiativeInfo.tasks ) do
 		if not task.tracked then
-			rootDescription:CreateButton("Track ("..task.progressContributionAmount..") "..task.taskName, function()
-					C_NeighborhoodInitiative.AddTrackedInitiativeTask(task.ID)
-				end)
+			sortedTasks[#sortedTasks+1] = {
+					progressContributionAmount = task.progressContributionAmount,
+					taskName = task.taskName,
+					ID = task.ID}
 		end
+	end
+	table.sort( sortedTasks, function(l, r)
+		if l.progressContributionAmount > r.progressContributionAmount then
+			return true
+		elseif l.progressContributionAmount == r.progressContributionAmount then
+			return l.ID < r.ID
+		end
+		return false
+	end)
+	for _, task in pairs( sortedTasks ) do
+		rootDescription:CreateButton("Track ("..task.progressContributionAmount..") "..task.taskName, function()
+				C_NeighborhoodInitiative.AddTrackedInitiativeTask(task.ID)
+				ET.NEIGHBORHOOD_INITIATIVE_UPDATED()
+			end)
 	end
 end
 function ET.Print(msg)
