@@ -56,6 +56,7 @@ function ET.UpdateBars()
 							ET.displayData[idx].requirementText
 					)
 			)
+			barLine.bar.taskID = ET.displayData[idx].ID
 			barLine.bar:Show()
 		else
 			barLine.bar:Hide()
@@ -271,6 +272,22 @@ function ET.ResetUIPosition()
 	EndeavorFrame:SetPoint("LEFT", "$parent", "LEFT")
 	EndeavorFrame:SetHeight( 1 )
 	ET.BuildBars()
+end
+function ET.BarOnMouseUp(self, button)
+	if button == "RightButton" then MenuUtil.CreateContextMenu(self, ET.BarMenuGenerator) end
+end
+function ET.BarMenuGenerator(owner, rootDescription)
+	rootDescription:CreateButton("Untrack "..ET.myTasks[owner.taskID].taskName, function()
+			C_NeighborhoodInitiative.RemoveTrackedInitiativeTask(owner.taskID)
+		end)
+	-- rootDescription:CreateDivider()
+	-- for _, task in pairs( ET.NeighborhoodInitiativeInfo.tasks ) do
+	-- 	if not task.tracked then
+	-- 		rootDescription:CreateButton("Track ("..task.progressContributionAmount..") "..task.taskName, function()
+	-- 				C_NeighborhoodInitiative.AddTrackedInitiativeTask(task.ID)
+	-- 			end)
+	-- 	end
+	-- end
 end
 function ET.Print(msg)
 	-- print to the chat frame
