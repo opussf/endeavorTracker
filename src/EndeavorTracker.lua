@@ -142,7 +142,7 @@ function ET.INITIATIVE_TASKS_TRACKED_UPDATED()
 	end
 	for ID, task in pairs(ET.myTasks) do
 		local taskInfo = C_NeighborhoodInitiative.GetInitiativeTaskInfo(ID)
-		if task.requirementText ~= taskInfo.requirementsList[1].requirementText then
+		if taskInfo and task.requirementText ~= taskInfo.requirementsList[1].requirementText then
 			-- ID matches, requirementText does not.  Progress!
 			task.requirementText = taskInfo.requirementsList[1].requirementText
 			ET.ParseRequirement(task)
