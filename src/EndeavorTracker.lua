@@ -40,6 +40,8 @@ function ET.UpdateBars()
 		if l.progressContributionAmount > r.progressContributionAmount then
 			return true
 		elseif l.progressContributionAmount == r.progressContributionAmount then
+			return l.progress > r.progress
+		elseif l.progress == r.progress then
 			return l.ID < r.ID
 		end
 		return false
