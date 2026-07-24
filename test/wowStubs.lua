@@ -1,7 +1,7 @@
 -----------------------------------------
 -- Author  :  Opussf
--- Date    :  January 24 2026
--- Revision:  9.7.1-12-g7f74e77
+-- Date    :  July 24 2026
+-- Revision:  9.7.1-15-g6904026
 -----------------------------------------
 -- These are functions from wow that have been needed by addons so far
 -- Not a complete list of the functions.
@@ -232,6 +232,8 @@ EquipmentSets = {
 -- Instance variables
 LE_PARTY_CATEGORY_HOME = 1
 LE_PARTY_CATEGORY_INSTANCE = 2
+LE_PET_JOURNAL_FILTER_COLLECTED = 1
+LE_PET_JOURNAL_FILTER_NOT_COLLECTED = 2
 -- WowToken
 TokenPrice = 123456 -- 12G 34S 45C
 --- Factions
@@ -689,8 +691,10 @@ function CreateEditBox( name, ... )
 end
 Button = {
 	["enabled"] = true,
+	["points"] = {},
 	["SetEnabled"] = function(self,enabled) self.enabled = enabled; end,
 	["IsEnabled"] = function(self) return self.enabled; end,
+	["SetPoint"] = function(self, ... ) table.insert( self.points, {...} ); end,
 }
 function CreateButton( name, ... )
 	me = {}
@@ -737,6 +741,7 @@ UIErrorsFrame={ ["AddMessage"] = function( self, msg )
 	end, }
 WeeklyRewardsFrame = CreateFrame()
 BankFrame = CreateFrame()
+Minimap = CreateFrame()
 
 -- stub some external API functions (try to keep alphabetical)
 function BuyMerchantItem( index, quantity )
@@ -1626,7 +1631,7 @@ function SendAddonMessage( prefix, text, type, target )
 	-- all characters 1-255 can be used (no NULL)
 end
 function SendChatMessage( msg, chatType, language, channel )
-	error("Don't use this.")
+	error("Use C_ChatInfo.SendChatMessage instead.")
 end
 function SetAchievementComparisonUnit( lookupStr )
 	-- mostly does nothing...  Just allows INSPECT_ACHIEVEMENT_READY to happen,
@@ -1843,6 +1848,9 @@ function C_EquipmentSet.GetIgnoredSlots( setNum )
 	-- True is ignored, false is not
 	return {}
 end
+function C_EquipmentSet.UseEquipmentSet( setNum )
+	-- Sets the current EquipmentSet
+end
 function GetEquipmentSetInfoByName( nameIn )
 	-- http://www.wowwiki.com/API_GetEquipmentSetInfo
 	-- Returns: icon, lessIndex = GetEquipmentSetInfoByName
@@ -2020,7 +2028,10 @@ function C_ChatInfo.IsAddonMessagePrefixRegistered( prefix )
 end
 function C_ChatInfo.RegisterAddonMessagePrefix( prefix )
 end
-function C_ChatInfo.SendAddonMessage()
+function C_ChatInfo.SendAddonMessage( prefix, msg, channel, target )
+	table.insert( chatLog,
+		{ ["msg"] = msg, ["chatType"] = "AddonMessage", ["channel"] = channel, ["prefix"] = prefix, ["target"] = target }
+	)
 	return true
 end
 function C_ChatInfo.SendChatMessage( msg, chatType, language, channel )
@@ -2105,7 +2116,6 @@ end
 function C_Item.IsBound( itemLocation )
 	return false
 end
-
 
 ----------
 -- Menu
@@ -2333,6 +2343,9 @@ C_PetJournal.data = {
 		GUID = 12534
 	},
 }
+C_PetJournal.__filterFlags = 0xFF
+C_PetJournal.__sourcesFlags = 0xAA -- 10101010
+C_PetJournal.__typeFlags = 0x55 -- 01010101
 function C_PetJournal.GetSummonedPetGUID()
 	return C_PetJournal.data.summoned.GUID
 end
@@ -2340,6 +2353,47 @@ function C_PetJournal.GetPetInfoByPetID( petID )
 	-- speciesID, customName, level, xp, maxXp, displayID, isFavorite, name, icon, petType, creatureID, sourceText, description, isWild, canBattle, tradable, unique, obtainable = C_PetJournal.GetPetInfoByPetID(petID)
 	-- @TODO: Look this up
 	return 0,"CustomPetName",0,0,0,0,0,"PetName"
+end
+function C_PetJournal.GetSearchFilter()
+	return ""
+end
+function C_PetJournal.SetSearchFilter(newFilter)
+end
+function C_PetJournal.IsFilterChecked(index)
+	return (C_PetJournal.__filterFlags & bit.lshift(1, index))>0
+end
+function C_PetJournal.SetFilterChecked(filterID, checked)
+	if checked then
+		C_PetJournal.__filterFlags = C_PetJournal.__filterFlags | bit.lshift(1, filterID-1)
+	else
+		C_PetJournal.__filterFlags = C_PetJournal.__filterFlags & ~bit.lshift(1, filterID-1)
+	end
+end
+function C_PetJournal.GetNumPetSources()
+	return 8
+end
+function C_PetJournal.IsPetSourceChecked(index)
+	return (C_PetJournal.__sourcesFlags & bit.lshift(1, index))>0
+end
+function C_PetJournal.SetPetSourceChecked(index, checked)
+	if checked then
+		C_PetJournal.__sourcesFlags = C_PetJournal.__sourcesFlags | bit.lshift(1, index-1)
+	else
+		C_PetJournal.__sourcesFlags = C_PetJournal.__sourcesFlags & ~bit.lshift(1, index-1)
+	end
+end
+function C_PetJournal.GetNumPetTypes()
+	return 8
+end
+function C_PetJournal.IsPetTypeChecked(index, checked)
+	return (C_PetJournal.__typeFlags & bit.lshift(1, index))>0
+end
+function C_PetJournal.SetPetTypeFilter(index, checked)
+	if checked then
+		C_PetJournal.__typeFlags = C_PetJournal.__typeFlags | bit.lshift(1, index-1)
+	else
+		C_PetJournal.__typeFlags = C_PetJournal.__typeFlags & ~bit.lshift(1, index-1)
+	end
 end
 
 ----------
@@ -2380,11 +2434,25 @@ end
 -- C_Map
 ----------
 C_Map = {}
+C_Map.playerPositions = {["player"] = {582, 0.51, 0.51}}  -- ["player"] = {mapID, x, y}
+function C_Map.GetXY(this)
+	return C_Map.x, C_Map.y
+end
+function C_Map.SetPlayerMapPosition(mapID, x, y, player)
+	C_Map.playerPositions[player] = {mapID, x, y}
+end
 function C_Map.GetBestMapForUnit( unitStr )
-	return 5
+	return 582
 end
 function C_Map.GetMapInfo( mapID )
 	return { mapID=5, name="map name", parentMapID=0, mapType=1, flags=2 }
+end
+function C_Map.GetPlayerMapPosition(mapID, player)
+	if C_Map.playerPositions[player] and C_Map.playerPositions[player][1] == mapID then
+		C_Map.x = C_Map.playerPositions[player][2]
+		C_Map.y = C_Map.playerPositions[player][3]
+		return C_Map
+	end
 end
 
 ----------
@@ -2418,6 +2486,66 @@ function C_MerchantFrame.GetItemInfo( index )
 				 texture = itemInfo.texture
 		}
 	end
+end
+
+----------
+-- C_EncodingUtil
+----------
+C_EncodingUtil = {}
+function C_EncodingUtil.CompressString( strIn, method, level )
+	-- compresses.  Return the same string, for testing.
+	return strIn
+end
+function C_EncodingUtil.DecompressString( strIn, method )
+	-- decompresses.  Return the same string, for testing.
+	return strIn
+end
+
+--------
+-- Garrison Work Order info
+--------
+myLootItems = {
+	-- {}    -- table of guid, and int
+}
+function AddLootItems( id )
+	table.insert(myLootItems, {id, 1})
+end
+function GetNumLootItems()
+	-- returns integer
+	return #myLootItems
+end
+function GetLootSourceInfo( index )
+	-- returns: guid (str), quantity (int)
+	return myLootItems[index][1], myLootItems[index][2]
+end
+
+---------
+-- C_Garrison
+---------
+C_Garrison = {}
+function C_Garrison.MakeTestData( buildingName, plotID, shipments )
+	-- this is probably handled with a few other methods.
+	C_Garrison.plotID = plotID
+	C_Garrison.testData = {}
+	C_Garrison.testData[plotID] = {}
+	C_Garrison.testData[plotID].buildingName = buildingName
+	C_Garrison.testData[plotID].shipments = shipments -- { array of expire times }
+end
+function C_Garrison.GetOwnedBuildingInfoAbbrev( plotID )
+	-- returns ? (int), buildingName (str)
+	return 16, C_Garrison.testData[plotID].buildingName
+end
+function C_Garrison.GetNumPendingShipments()
+	-- returns numPending (int)
+	return #C_Garrison.testData[C_Garrison.plotID].shipments
+end
+function C_Garrison.GetShipmentItemInfo()
+	-- returns name, texture, quality, itemID, followerID, duraation
+	return "", 0, 0, 0, 0, 14400
+end
+function C_Garrison.GetPendingShipmentInfo( index )
+	-- returns
+	return "herbs", 263455, 1, 238763, "nil", 14400, C_Garrison.testData[C_Garrison.plotID].shipments[index]
 end
 
 --------
